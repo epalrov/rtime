@@ -1,0 +1,15 @@
+rtime
+rtimed
+rtime.h
+rtime_xdr.c
+rtime_clnt.c
+rtime_svc.c
+*.o
+.deps/
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+configure
+config.log
+config.status
