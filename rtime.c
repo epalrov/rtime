@@ -32,9 +32,9 @@ static void rtime_usage(FILE * out)
 		"  -v | --version    show the program version and exit     \n"
 		"  -h | --help       show this help and exit             \n\n"
 		"Examples:                                                 \n"
-		"  rtime clock_settime 10.5                                \n"
-		"  rtime -a localhost -t tcp clock_gettime                 \n"
-		"  rtime -a /var/run/rtime.socket -t unix clock_gettime  \n\n");
+		"  rtime clock_settime <clock_id> <time>                   \n"
+		"  rtime -a localhost -t tcp clock_gettime <clock_id>      \n"
+		"  rtime -a /var/run/rtime.socket -t unix clock          \n\n");
 
 	fprintf(out, "%s", usage_str);
 	fflush(out);
@@ -62,14 +62,16 @@ static const struct option rtime_options[] = {
 
 struct procedure {
 	char *proc_name;
+	char *args_name;
 	int proc_no;
+	int args_no;
 };
 
 static const struct procedure rtime_procedures[] = {
-	{ "null", RTIME_NULL },
-	{ "clock", RTIME_CLOCK },
-	{ "clock_gettime", RTIME_CLOCK_GETTIME },
-	{ "clock_settime", RTIME_CLOCK_SETTIME },
+	{ "null", "", RTIME_NULL, 0 },
+	{ "clock", "", RTIME_CLOCK, 0 },
+	{ "clock_gettime", "clock_id", RTIME_CLOCK_GETTIME, 1 },
+	{ "clock_settime", "clock_id, time", RTIME_CLOCK_SETTIME, 2 },
 };
 
 int main(int argc, char *argv[])
@@ -78,8 +80,8 @@ int main(int argc, char *argv[])
 	char *addr = RTIME_HOSTNAME;
 	char *type = RTIME_SERVICE_TYPE;
 
-	int proc_no, proc_max;
-	char *proc_name;
+	int proc_no, proc_max, args_no;
+	char *proc_name, *args_name;
 
 	CLIENT *cl;
 
@@ -125,16 +127,18 @@ int main(int argc, char *argv[])
 			break;
 	}
 	if (i < proc_max) {
+		proc_name = rtime_procedures[i].proc_name;
+		args_name = rtime_procedures[i].args_name;
 		proc_no = rtime_procedures[i].proc_no;
+		args_no = rtime_procedures[i].args_no;
 	} else {
-		fprintf(stderr, "invalid remote procedure: '%s'\n", proc_name);
+		fprintf(stderr, "invalid procedure: '%s'\n", proc_name);
 		exit(EXIT_FAILURE);
 	}
-
-	/* move index to the remote procedure arguments */
-	argc -= 1;
-	argv += 1;
-
+	if (argc < args_no) {
+		fprintf(stderr, "required arguments: '%s'\n", args_name);
+		exit(EXIT_FAILURE);
+	}
 
 	cl = clnt_create(addr, RTIME_PROG, RTIME_VERS, type);
 	if (!cl) {
@@ -152,8 +156,7 @@ int main(int argc, char *argv[])
 			printf("remote clock(): %d\n", (int)clock);
 		break;
 	case RTIME_CLOCK_GETTIME:
-		/* FIXME retrieve arguments from argv! */
-		clock_id = 0;
+		clock_id = strtoul(argv[1], NULL, 10);
 		ret = rtime_clock_gettime_1_clnt(cl, clock_id, &tp);
 		if (!ret)
 			printf("remote clock_gettime(): %d.%09d\n",
@@ -162,10 +165,9 @@ int main(int argc, char *argv[])
 			printf("remote clock_gettime() error: %d\n", ret);
 		break;
 	case RTIME_CLOCK_SETTIME:
-		/* FIXME retrieve arguments from argv! */
-		clock_id = 0;
-		tp.tv_sec = 10;
-		tp.tv_nsec = 10;
+		clock_id = strtoul(argv[1], NULL, 10);
+		tp.tv_sec = strtoul(argv[2], NULL, 10);
+		tp.tv_nsec = 0;
 		ret = rtime_clock_settime_1_clnt(cl, clock_id, &tp);
 		if (ret)
 			printf("remote clock_settime() error: %d\n", ret);
