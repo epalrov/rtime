@@ -1,4 +1,21 @@
-rtime/rtimed:   example of RPC client/server applications
+project:        Remote Time Service
+
+description:    Example of RPC client/server applications.
+
+                Remote Procedure Call (RPC) is a powerful technique for
+                constructing distributed, client/server based applications.
+                This example exploits how to use the Sun RPC (described in the 
+                RFC1831, and sometimes called ONC RPC) to convert local
+                procedures to remote procedures so that the called procedure
+                need not exist in the same address space as the calling
+                procedure. The two processes may be on the same system, or they
+                may be on different systems with a network connecting them.
+                This example implements all the following IPC mechanisms:
+                 - unix socket (local)
+                 - udp socket (network)
+                 - tcp socket (network)
+
+build:          autoreconf && ./configure && make
 
 author:         Paolo Rovelli
 contact:        paolorovelli@yahoo.it
